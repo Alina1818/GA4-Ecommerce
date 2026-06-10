@@ -55,13 +55,11 @@ Raw GA4 events are standardized and enriched.
 Models:
 
 * stg_ga4__events
-* stg_ga4__sessions
 * stg_ga4__purchases
 
 Key transformations:
 
 * Event normalization
-* Session reconstruction
 * Channel grouping
 * Data quality flags
 * Purchase deduplication
@@ -75,14 +73,14 @@ Business logic is separated from reporting models.
 
 Models:
 
+* int_sessions
 * int_funnel_steps
-* int_sessions_enriched
 * int_user_metrics
 
 Purpose:
 
 * Funnel preparation
-* Session enrichment
+* Session reconstruction
 * User-level metric calculation
 
 ---
