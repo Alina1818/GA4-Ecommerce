@@ -222,26 +222,20 @@ Revenue from session-level reporting did not match revenue from order-level repo
 select round(sum(revenue),2)
 from fct_orders
 
-Result:
+Result: 308,270
 
-308,270
 select round(sum(session_revenue),2)
 from int_sessions
 
-Result:
+Result: 308,830
 
-308,830
-
-Difference:
-
-560
+Difference: 560
 
 #### Hypothesis 1
 
 Duplicate purchase events.
 
 Validation:
-
 Purchase events: 4,786
 Unique transactions: 4,451
 Duplicates: 335
@@ -386,33 +380,26 @@ The public GA4 sample dataset is static, therefore freshness checks are included
 
 ### CI/CD
 
-GitHub Actions automatically executes:
+CI/CD is implemented using GitHub Actions.
 
-dbt deps
-dbt build
-dbt test
+Every push and pull request automatically runs:
+* dbt parse
+* dbt build
+* dbt tests
+* source freshness checks
 
-on every push and pull request.
-
-Benefits:
-* automated validation
-* prevention of broken models
-* reproducible builds
+This ensures that new changes do not break model dependencies or data quality validations.
 
 ### Documentation
 
 dbt documentation includes:
-
-model descriptions
-column descriptions
-lineage graph
-business definitions
-test coverage
-
-Example lineage graph:
+* model descriptions
+* column descriptions
+* lineage graph
+* business definitions
+* test coverage
 
 <img width="1602" height="696" alt="image" src="https://github.com/user-attachments/assets/477ce34a-2160-41eb-a49b-44d8381e4208" />
-
 
 The lineage graph visualizes how raw GA4 events are transformed into reporting-ready analytical datasets.
 
@@ -437,6 +424,5 @@ models/
 ├── intermediate/
 ├── marts/
 ├── tests/
-
 .github/
 └── workflows/
