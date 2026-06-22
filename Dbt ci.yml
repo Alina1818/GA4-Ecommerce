@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-
   dbt:
 
     runs-on: ubuntu-latest
@@ -19,12 +18,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install dbt-bigquery
+      - name: Install dbt
+        run: pip install dbt-bigquery
 
-      - name: Create dummy profile
+      - name: Create dbt profile
         run: |
           mkdir -p ~/.dbt
-          cat > ~/.dbt/profiles.yml << EOF
+
+          echo "
           ga4_analytics:
             target: dev
             outputs:
@@ -35,8 +36,15 @@ jobs:
                 dataset: dummy_dataset
                 threads: 1
                 location: US
-          EOF
+          " > ~/.dbt/profiles.yml
 
-      - run: dbt deps
+      - name: Check profile exists
+        run: |
+          ls -la ~/.dbt
+          cat ~/.dbt/profiles.yml
 
-      - run: dbt parse
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt parse
+        run: dbt parse
