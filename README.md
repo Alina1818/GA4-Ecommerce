@@ -1,35 +1,48 @@
 # GA4 Ecommerce Analytics Platform
 
 End-to-end analytics engineering project built on Google Analytics 4 public e-commerce data:
-BigQuery → dbt → Tableau.
+BigQuery → dbt → Tableau → GitHub Actions
 
+Dataset: bigquery-public-data.ga4_obfuscated_sample_ecommerce (Nov 2020 – Jan 2021, ~4.3M events)
+Status: Production-style analytics pipeline with testing, data quality monitoring, source freshness validation and documented business marts.
 
-Dataset: bigquery-public-data.ga4_obfuscated_sample_ecommerce (Nov 2020 – Jan 2021, ~4.3M events, read directly, zero-copy)
-Status: staging + intermediate + marts layers complete, tested, and reconciled to the cent.
+## Project Overview
 
-What this project demonstrates
+The goal of the project was to transform raw GA4 event data into trusted analytical datasets and reporting-ready business marts while applying modern analytics engineering practices:
 
+* layered dbt architecture
+* automated testing
+* source freshness monitoring
+* revenue reconciliation
+* data quality monitoring
+* business metric standardization
 
-* Parsing raw, deeply nested GA4 BigQuery export data (UNNEST'd event params and items arrays)
-* A clean staging → intermediate → marts dbt architecture, with marts consolidated to avoid
-duplicate business logic across dashboards
-* A real, non-trivial data-quality investigation: finding, diagnosing, and fixing a revenue
-discrepancy caused by a non-unique natural key — see Data Quality Deep Dive
-* An automated test suite built around cross-model consistency, not just column-level checks
-* Business-ready marts feeding Tableau dashboards (Executive Overview, Marketing Performance, Funnel)
+Pipeline:
+
+Raw GA4 Events
+      ↓
+Staging Layer
+      ↓
+Intermediate Layer
+      ↓
+Business Marts
+      ↓
+Tableau Dashboards
 
 ---
 
 ## Business Objectives
 
-The project addresses several common ecommerce analytics challenges:
+The project addresses common ecommerce analytics use cases:
 
-* Measure acquisition performance by marketing channel
-* Track user behavior through the ecommerce funnel
-* Analyze customer retention and lifetime value
-* Monitor executive KPIs
-* Detect and document data quality issues
-* Create trusted reporting datasets for BI consumption
+* Marketing channel performance
+* Executive KPI reporting
+* Ecommerce funnel analysis
+* Customer retention analysis
+* Customer lifetime value analysis
+* Product performance analysis
+* Data quality monitoring
+* Revenue reconciliation
 
 ---
 
@@ -41,24 +54,31 @@ The project addresses several common ecommerce analytics challenges:
 * Google Analytics 4 Sample Ecommerce Dataset
 * Tableau Public
 * GitHub
+* GitHub Actions (CI/CD)
+
+---
+
+### Coverage Metrics
+
+| Metric                    | Value   |
+| ------------------------- | ------- |
+| Raw events                | ~4.3M   |
+| Sessions                  | ~408K   |
+| Users                     | ~243K   |
+| Purchase events           | 4,786   |
+| Unique orders             | 4,466   |
+| Revenue reconciled        | 308,830 |
+| Revenue discrepancy fixed | 560     |
+| Data marts                | 6       |
+| Automated tests           | 20+     |
 
 ---
 
 ## Data Architecture
 
-Raw GA4 Events
-↓
-Staging Layer
-↓
-Intermediate Layer
-↓
-Business Marts
-↓
-BI Dashboard
-
 ### Staging Layer
 
-Raw GA4 events are standardized and enriched.
+Purpose: standardize raw GA4 export data and expose business-friendly fields.
 
 Models:
 
@@ -66,28 +86,37 @@ Models:
 
 Key transformations:
 
-* Event normalization
-* Channel grouping
-* Data quality flags
-* Transaction validation
+* event parameter extraction
+* traffic attribution parsing
+* ecommerce extraction
+* device enrichment
+* geography enrichment
+* channel grouping
+* data quality flags
+
+Examples:
+
+* missing transaction detection
+* GDPR deleted traffic detection
+* internal referral detection
 
 ---
 
 ### Intermediate Layer
 
-Business logic is separated from reporting models.
+Purpose: separate business logic from reporting logic.
 
 Models:
 
 * int_sessions
-* int_funnel_steps
 * int_user_metrics
+* int_purchase_events_deduped
 
-Purpose:
+Responsibilities:
 
-* Funnel preparation
-* Session reconstruction
-* User-level metric calculation
+* session reconstruction
+* user aggregation
+* purchase deduplication
 
 ---
 
@@ -95,187 +124,319 @@ Purpose:
 
 The marts layer contains business-ready metrics designed for reporting and decision making.
 
-#### mart_executive_kpi
+#### mart_daily_performance
 
-Executive-level daily performance metrics:
+Marketing performance mart.
 
-* Revenue
-* Sessions
-* Users
-* Purchases
-* Conversion Rate
-* Average Order Value
+Dimensions:
+* channel
+* source
+* medium
+* country
+* city
+* device
+* browser
 
-#### mart_product_performance
-
-Product performance metrics based on deduplicated transactions:
-
-* product revenue
-* quantity sold
-* average item price
-* transaction metrics
-
+Metrics:
+* sessions
+* users
+* transactions
+* revenue
+* conversion rate
+* AOV
+  
 #### mart_funnel
 
-Normalized ecommerce funnel:
+Normalized ecommerce funnel.
 
+Steps:
 * View Item
 * Add To Cart
 * Begin Checkout
 * Purchase
 
+Metrics:
+* item_to_cart_rate
+* cart_to_checkout_rate
+* checkout_to_purchase_rate
+
+#### mart_product_performance
+
+Product performance analysis:
+
+Metrics:
+* product revenue
+* units sold
+* transaction count
+* average item price
+
 #### mart_retention
 
 Customer retention metrics:
 
-* Cohort analysis
-* Day 1 retention
-* Day 7 retention
-* Day 30 retention
+Metrics:
+* cohort size
+* active users
+* retention rate
 
 #### mart_user_ltv
 
-User-level lifetime value dataset:
+Thin BI-facing layer built on top of int_user_metrics.
 
-* Revenue per user
-* Session frequency
-* Lifetime duration
-* Purchase behavior
+Purpose:
+* expose user-level metrics for Tableau
+* provide stable reporting interface
+* avoid duplication of business logic
+
+Metrics:
+* total revenue
+* total sessions
+* active days
+* purchase count
+* average order value
+* first-touch acquisition dimensions
 
 #### mart_data_quality
 
-Centralized data quality monitoring:
+Centralized data quality monitoring
 
-* Missing transaction IDs
-* Duplicate transaction IDs
-* Revenue validation
-* Session anomalies
-* Data freshness checks
-
----
-
-## Documentation
-
-The project includes dbt documentation generated from model and column metadata.
-
-Documentation covers:
-
-model descriptions
-key business metrics
-column definitions
-data quality tests
-lineage graph showing dependencies between models
-
-Example documentation includes:
-
-model descriptions
-column definitions
-lineage graph
-data relationships
-
-<img width="1285" height="804" alt="image" src="https://github.com/user-attachments/assets/b108a593-3d08-4646-8eae-918f3069bdd6" />
-
-
-The lineage graph provides a visual representation of how raw GA4 events are transformed into analytical datasets and business-ready marts.
+Checks:
+* missing transaction IDs
+* duplicate transaction IDs
+* revenue validation
+* session anomalies
+* data freshness checks
 
 ---
 
-## Data Quality Findings
+### Data Quality Deep Dive
 
-Several issues were identified during exploratory analysis and addressed within the pipeline.
+One of the main goals of the project was ensuring metric consistency across all reporting layers.
 
-### Duplicate Purchase Events
+During validation a revenue discrepancy was discovered.
 
-Purchase events contained duplicated transaction IDs.
+#### Initial Finding
 
-Findings:
+Revenue from session-level reporting did not match revenue from order-level reporting.
 
-* 4,786 purchase events
-* 4,451 unique transactions
-* 335 duplicated purchase events
+select round(sum(revenue),2)
+from fct_orders
 
-Solution:
+Result:
 
-Purchase events are deduplicated using:
+308,270
+select round(sum(session_revenue),2)
+from int_sessions
 
-ROW_NUMBER() OVER (
-PARTITION BY transaction_id
-ORDER BY event_timestamp
+Result:
+
+308,830
+
+Difference:
+
+560
+
+#### Hypothesis 1
+
+Duplicate purchase events.
+
+Validation:
+
+Purchase events: 4,786
+Unique transactions: 4,451
+Duplicates: 335
+
+Deduplication implemented using:
+
+row_number() over (
+  partition by transaction_id
+  order by event_timestamp
 )
 
-Only the first occurrence of each transaction is retained.
+Partially reduced the discrepancy.
 
----
+#### Hypothesis 2
 
-### Missing Transaction IDs
+Missing transaction IDs.
 
-Some purchase events were missing transaction identifiers.
+Validation:
 
-Findings:
+906 purchase events
 
-* 906 purchase events without valid transaction IDs
+These events were excluded from financial reporting.
 
-Impact:
+Discrepancy remained.
 
-These events are excluded from revenue calculations to avoid metric inflation.
+Hypothesis rejected.
 
----
+#### Hypothesis 3
 
-### Funnel Anomalies
+Session aggregation issue.
 
-Sessions were detected where users reached checkout without a preceding add_to_cart event.
+Validation:
 
-Impact:
+No duplicated session_id values detected.
 
-Traditional funnel calculations produced conversion rates above 100%.
+Hypothesis rejected.
 
-Solution:
+#### Hypothesis 4
 
-A normalized sequential funnel was implemented to ensure valid step progression.
+Transaction ID collisions.
 
----
+Validation revealed that transaction_id was not globally unique.
 
-## Testing
+Multiple users shared identical transaction IDs.
 
-The project includes both schema tests and custom SQL tests.
+Example:
 
-Examples:
+select
+ transaction_id,
+ count(distinct user_pseudo_id)
+from int_purchase_events_deduped
+group by 1
+having count(distinct user_pseudo_id) > 1
 
-* Not Null Tests
-* Unique Session ID Tests
-* Funnel Validation Tests
-* Revenue Validation Tests
-* Retention Validation Tests
-* LTV Validation Tests
+Root cause confirmed.
 
-All business marts are validated through automated dbt testing.
+#### Solution
 
----
+A synthetic business key was introduced:
 
-## Key Skills Demonstrated
+concat(
+ user_pseudo_id,
+ '-',
+ transaction_id
+) as order_key
 
+All financial models were migrated to use:
+order_key
+
+instead of:
+transaction_id
+
+#### Result
+
+Revenue reconciliation:
+
+Session Revenue: 308,830
+Order Revenue:   308,830
+Difference:      0
+
+Revenue fully reconciled.
+
+### Data Quality Improvements
+
+Additional improvements implemented:
+
+#### Channel Attribution Fix
+
+Investigation revealed that:
+
+<Other>
+
+traffic was incorrectly classified as:
+
+Direct
+
+because NULL source values and obfuscated GA4 values were treated identically.
+
+Channel grouping logic was redesigned using raw source and medium values.
+
+Result:
+* Direct traffic corrected
+* Obfuscated traffic isolated
+* Channel reporting became more accurate
+
+#### Testing
+
+Automated dbt tests include:
+* unique keys
+* not null validation
+* relationships tests
+* funnel validation
+* retention validation
+* revenue validation
+* LTV validation
+
+All marts are validated through dbt test runs.
+
+### Source Freshness Monitoring
+
+The project includes dbt source freshness monitoring.
+
+freshness:
+
+  warn_after:
+    count: 24
+    period: hour
+
+  error_after:
+    count: 48
+    period: hour
+
+Purpose:
+
+monitor source latency
+detect stale data
+simulate production-grade monitoring
+
+Note:
+
+The public GA4 sample dataset is static, therefore freshness checks are included to demonstrate implementation rather than operational alerting.
+
+### CI/CD
+
+GitHub Actions automatically executes:
+
+dbt deps
+dbt build
+dbt test
+
+on every push and pull request.
+
+Benefits:
+* automated validation
+* prevention of broken models
+* reproducible builds
+
+### Documentation
+
+dbt documentation includes:
+
+model descriptions
+column descriptions
+lineage graph
+business definitions
+test coverage
+
+Example lineage graph:
+
+<img width="1602" height="696" alt="image" src="https://github.com/user-attachments/assets/477ce34a-2160-41eb-a49b-44d8381e4208" />
+
+
+The lineage graph visualizes how raw GA4 events are transformed into reporting-ready analytical datasets.
+
+### Key Skills Demonstrated
 * Analytics Engineering
 * SQL Development
 * Data Modeling
 * dbt
 * BigQuery
 * Data Quality Monitoring
+* Revenue Reconciliation
 * Funnel Analytics
 * Cohort Analysis
 * Customer Lifetime Value Analysis
+* Marketing Attribution
+* CI/CD
+* Source Freshness Monitoring
 
----
-
-## Repository Structure
-
+### Repository Structure
 models/
 ├── staging/
 ├── intermediate/
-└── marts/
+├── marts/
+├── tests/
 
-tests/
-
-
-README.md
-
-eda_findings.md
+.github/
+└── workflows/
