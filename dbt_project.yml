@@ -16,9 +16,12 @@ clean-targets: ["target", "dbt_packages"]
 models:
   ga4_analytics:
     staging:
-      +materialized: view
+      +materialized: table
       +schema: staging
-
+    intermediate:
+      +materialized: view
+    core:
+      +materialized: table
     marts:
       +materialized: table
       +schema: analytics
